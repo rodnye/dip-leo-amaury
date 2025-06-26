@@ -1,0 +1,42 @@
+name: Deploy to EvenNode
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  Deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      # Evennode tiene problemas al compilar
+      - name: Build Next.js app
+        run: |
+          pnpm install
+          pnpm build
+          rm -rf src
+
+      - name: EvenNode Deploy
+        uses: rodnye/evennode-deploy-action@v0.0.2-alpha
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          git_url: ${{ secrets.EVENNODE_REPO_URL }}
+          git_name: ${{ secrets.GIT_NAME }}
+          git_email: ${{ secrets.GIT_EMAIL }}
+          pre_commit_command: 'git add dist -f'
